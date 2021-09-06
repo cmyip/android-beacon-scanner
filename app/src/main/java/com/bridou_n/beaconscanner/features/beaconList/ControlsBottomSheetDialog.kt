@@ -95,26 +95,6 @@ class ControlsBottomSheetDialog : RoundedBottomSheetDialog() {
             })
         }
 
-        clipboardContainer.setOnClickListener {
-            context?.let { ctx ->
-                queries.add(
-                    db.beaconsDao().getBeaconById(beaconId)
-                        .subscribeOn(Schedulers.io())
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .subscribe({
-                            val clipboard = ctx.getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
-                            val clip = ClipData.newPlainText("Beacon infos", it.toJson())
-                            clipboard.primaryClip = clip
-
-                            dismissAllowingStateLoss()
-                            (activity as? BeaconListActivity)?.showGenericError(ctx.getString(R.string.the_informations_has_been_copied)) ?:
-                            (activity as? AppCompatActivity)?.showSnackBar(ctx.getString(R.string.the_informations_has_been_copied))
-                        }, { err ->
-
-                        })
-                )
-            }
-        }
 
         blockedContainer.setOnClickListener {
             queries.add(db.beaconsDao().getBeaconById(beaconId)

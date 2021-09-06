@@ -2,14 +2,14 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-kapt'
-apply plugin: 'io.fabric'
+apply plugin: 'com.google.firebase.crashlytics'
 
 android {
-    compileSdkVersion 28
+    compileSdkVersion 29
     defaultConfig {
         applicationId "com.bridou_n.beaconscanner"
-        minSdkVersion 21
-        targetSdkVersion 28
+        minSdkVersion 26
+        targetSdkVersion 29
         versionCode 20
         versionName "3.1.1"
 
@@ -18,21 +18,12 @@ android {
         multiDexEnabled true
     }
 
-    signingConfigs {
-        release {
-            keyAlias 'BeaconScannerKey'
-            keyPassword beacon_scanner_key_password
-            storeFile file(beacon_scanner_store_file)
-            storePassword beacon_scanner_store_password
-        }
-    }
 
     buildTypes {
         release {
             minifyEnabled true
             resValue "string", "app_name", "Beacon Scanner"
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.release
         }
 
         debug {
@@ -83,6 +74,7 @@ dependencies {
     implementation 'com.squareup.okhttp3:logging-interceptor:3.10.0'
 
     implementation 'com.google.code.gson:gson:2.8.5'
+    implementation 'com.google.android.gms:play-services-base:16.1.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.4.0'
 
     // ALT Beacon library
@@ -104,7 +96,7 @@ dependencies {
     // Firebase Analytics & Crash reporting
     implementation "com.google.firebase:firebase-core:17.2.1"
     implementation "com.google.firebase:firebase-crash:16.2.1"
-    implementation 'com.crashlytics.sdk.android:crashlytics:2.10.1'
+    implementation 'com.google.firebase:firebase-crashlytics:18.2.1'
 
     // Timber
     implementation 'com.jakewharton.timber:timber:4.7.1'
@@ -112,6 +104,8 @@ dependencies {
     androidTestImplementation('androidx.test.espresso:espresso-core:3.1.1-alpha01', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
+
+    compileOnly 'com.github.pengrad:jdk9-deps:1.0'
 
     testImplementation 'junit:junit:4.12'
 }

@@ -1,13 +1,14 @@
 package com.bridou_n.beaconscanner.features.beaconList
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.PorterDuff
 import android.net.Uri
-import android.os.Bundle
-import android.os.RemoteException
+import android.os.*
 import android.provider.Settings
+import android.telephony.SmsManager
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -48,6 +49,8 @@ import org.altbeacon.beacon.Region
 import timber.log.Timber
 import java.util.*
 import javax.inject.Inject
+import androidx.annotation.RequiresApi
+
 
 class BeaconListActivity : AppCompatActivity(), BeaconConsumer {
 	
@@ -83,6 +86,12 @@ class BeaconListActivity : AppCompatActivity(), BeaconConsumer {
 	private var loggingRequests = CompositeDisposable()
 	
 	private var isScanning = false
+
+	private var currentActiveBeacon = "";
+	private var roomBeaconMap : Map<String, String> = mapOf(
+		"2f234454-cf6d-4a0f-adf2-f4911ba9ffa6" to "Room A",
+		"2f234454-cf6d-4a0f-adf2-f4911ba9ffb6" to "Room B"
+	)
 	
 	private val rvAdapter = BeaconsRecyclerViewAdapter { beacon ->
 		ControlsBottomSheetDialog.newInstance(beacon.hashcode).apply {
@@ -265,6 +274,7 @@ class BeaconListActivity : AppCompatActivity(), BeaconConsumer {
 			if (isScanning) {
 				storeBeaconsAround(beacons)
 				logToWebhookIfNeeded()
+				sendSmsToTarget()
 			}
 		}
 		
@@ -320,6 +330,41 @@ class BeaconListActivity : AppCompatActivity(), BeaconConsumer {
 					Timber.e(IllegalStateException("Got err $err"))
 				}))
 		}
+	}
+
+	fun sendSmsToTarget() {
+		numberOfScansSinceLog = 0
+		loggingRequests.add(db.beaconsDao().getBeaconsSeenAfter(prefs.lasLoggingCall)
+			.filter { it.isNotEmpty() }
+			.doOnSuccess{
+				it.forEach {
+					if (it.ibeaconData != null ) {
+						if (currentActiveBeacon == it.ibeaconData.uuid) {
+							return@forEach
+						}
+						this.currentActiveBeacon = it.ibeaconData.uuid
+						if (roomBeaconMap.containsKey(it.ibeaconData.uuid)) {
+							var roomName = roomBeaconMap.get(it.ibeaconData.uuid)
+							var smsManager = SmsManager.getDefault()
+							smsManager.sendTextMessage("", null, "You entered $roomName", null, null)
+							var v = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+							if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+								v.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE))
+							} else {
+								v.vibrate(500)
+							}
+						}
+					}
+				}
+			}
+			.subscribeOn(Schedulers.io())
+			.observeOn(AndroidSchedulers.mainThread())
+			.subscribe({
+				Timber.d("Logged successfully")
+				prefs.lasLoggingCall = Date().time
+			}, { err ->
+				Timber.e(IllegalStateException("Got err $err"))
+			}))
 	}
 	
 	override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {

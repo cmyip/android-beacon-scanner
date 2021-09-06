@@ -6,7 +6,7 @@ import com.bridou_n.beaconscanner.dagger.AppComponent
 import com.bridou_n.beaconscanner.dagger.ContextModule
 import com.bridou_n.beaconscanner.dagger.DaggerAppComponent
 import com.bridou_n.beaconscanner.utils.BuildTypes
-import com.crashlytics.android.Crashlytics
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.google.firebase.analytics.FirebaseAnalytics
 import timber.log.Timber
 import javax.inject.Inject
@@ -45,11 +45,11 @@ class AppSingleton : MultiDexApplication() {
 class CrashReportingTree : Timber.DebugTree() {
 	
 	override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
-		Crashlytics.log(priority, tag, message)
+		FirebaseCrashlytics.getInstance().log(message)
 		
 		t?.let {
 			if (priority == ERROR) {
-				Crashlytics.logException(t)
+				FirebaseCrashlytics.getInstance().recordException(t)
 			}
 		}
 	}
